@@ -11,9 +11,13 @@ import com.typesafe.config.Config;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.inject.Inject;
 
@@ -23,18 +27,15 @@ import javax.inject.Inject;
  */
 public class Thermometer extends Controller {
 
-    private static String regex = "[-]?[/d]*.?[/d]* [CF]";
-    private static String format = "\\[temp:(?<temp>[A-Z]+)\\]\\[unit:(?<unit>\\d+)\\]";
-
     private String UNIT;
     private double THRESHHOLD;
+    private List<String> outputArray;
 
     @Inject
     public Thermometer(Config conf) {
         UNIT = conf.getString("thermometer.unit");
         THRESHHOLD = conf.getDouble("thermometer.threshold");
-
-
+        outputArray = new ArrayList<>();
     }
 
     /**
@@ -44,8 +45,9 @@ public class Thermometer extends Controller {
      * <code>GET</code> request with a path of <code>/</code>.
      */
     public Result index() {
-        try {
-            return ok(generateDisplay(new ArrayList<>()));
+        try (Stream<String> lines = Files.lines(Paths.get("empty.txt"))) {
+
+            return ok(generateDisplay(lines, new ArrayList<>()));
         } catch (IOException e) {
             Logger.error("Error!", e);
         } catch (Exception e) {
@@ -56,10 +58,11 @@ public class Thermometer extends Controller {
     }
 
     public Result case1() {
-        try {
+        try (Stream<String> lines = Files.lines(Paths.get("input.txt"))) {
             List<Event> events = new ArrayList<>();
             events.add(new Event("Freezing", 0, Trend.DOWN));
-            return ok(generateDisplay(events));
+
+            return ok(generateDisplay(lines, events));
         } catch (IOException e) {
             Logger.error("Error!", e);
         } catch (Exception e) {
@@ -69,45 +72,49 @@ public class Thermometer extends Controller {
         return badRequest("Your shit is broke.");
     }
 
-    private Html generateDisplay(List<Event> events) throws IOException {
-        File input = new File("input.txt");
-        Logger.info("Opened file!");
-        Scanner scanner = new Scanner(input);
-
-        List<String> outputArray = new ArrayList<>();
-        List<Event> triggeredEvents = scanner.hasNextLine() ?
-                        parseEvents(scanner, events, new ArrayList<>(), parseLine(scanner)) : new ArrayList<>();
-
-        return views.html.index.render(UNIT, THRESHHOLD, outputArray, triggeredEvents);
+    private Html generateDisplay(Stream<String> lines, List<Event> events) {
+        return views.html.index.render(UNIT, THRESHHOLD, outputArray, parseEvents(lines, events));
     }
 
-    private List<Event> parseEvents(Scanner scanner, List<Event> events, List<Event> triggered, double thisTemp) {
-        if (!scanner.hasNextLine()) {
-            return triggered;
+    public List<Event> parseEvents(Stream<String> lines, List<Event> events) {
+        List<Event> triggered = new ArrayList<>();
+        List<Double> values = lines.map(line -> Double.valueOf(line.split(UNIT)[0]))
+                                   .collect(Collectors.toList());
+
+        Double lastTemp = null;
+        for (Double thisTemp: values) {
+            if (lastTemp == null) {
+                lastTemp = thisTemp;
+                continue;
+            }
+
+            Event match = matchEvent(events, thisTemp, lastTemp);
+            if (match != null) {
+                triggered.add(match);
+            }
+
+            lastTemp = thisTemp;
         }
 
-        double nextTemp = parseLine(scanner);
-
-        events.stream()
-              .filter(event -> event.getTemperature() == nextTemp)
-              .findFirst()
-              .ifPresent(event -> {
-                  if ((Trend.UP == event.getTrend() && thisTemp < nextTemp) ||
-                      (Trend.DOWN == event.getTrend() && thisTemp > nextTemp)) {
-                    triggered.add(event);
-                  }
-              });
-
-        return parseEvents(scanner, events, triggered, nextTemp);
+        return triggered;
     }
 
-    private double parseLine(Scanner scanner) {
-        String line = scanner.nextLine();
-        if (line.indexOf(UNIT) > 0) {
-            return Double.valueOf(line.split(UNIT)[0]);
-        } else {
-            throw new IllegalArgumentException("Invalid temperature format detected: " + line);
-        }
+    public Event matchEvent(List<Event> events, Double thisTemp, Double lastTemp) {
+        return events.stream()
+                     .filter(event -> event.getTemperature() == thisTemp &&
+                                      ((Trend.UP == event.getTrend() && thisTemp < lastTemp) ||
+                                       (Trend.DOWN == event.getTrend() && thisTemp > lastTemp)))
+                     .findFirst()
+                     .orElse(null);
     }
+
+//    public double parseLine(String line) {
+//        outputArray.add(line);
+//        if (line.indexOf(UNIT) > 0) {
+//            return ;
+//        } else {
+//            throw new IllegalArgumentException("Invalid temperature format detected: " + line);
+//        }
+//    }
 
 }

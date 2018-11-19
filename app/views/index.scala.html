@@ -21,7 +21,7 @@
   <h3>Events:</h3>
   <p>
     @for(event <- events) {
-      <ul>New (@event.getName) Event Occurred! @event.getTemperature @units reached when trending @event.getTrend.getDisplayName()</ul>
+      <ul>New (<b>@event.getName</b>) Event Occurred! <b>@event.getTemperature @units</b> reached when trending <b>@event.getTrend.getDisplayName()</b></ul>
     }
   </p>
 }

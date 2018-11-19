@@ -3,3 +3,7 @@
 *.iml
 *.bat
 *.log
+.cache*
+project/
+target/
+logs/
