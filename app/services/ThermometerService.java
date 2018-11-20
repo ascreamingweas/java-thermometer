@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -34,33 +35,54 @@ public class ThermometerService {
      * Core function for iterating over the provided input stream
      * of temperatures and matching all user defined events.
      *
+     * This includes some logic for tracking existing triggered Events
+     * and determining if we care to log an event occurrence if the values
+     *
      * @param lines a stream of provided String lines for iterating over
      * @param events a list of user defined events for the system to monitor
      * @return a list of all "triggered" events found when parsing the input
      */
     public List<Event> parseEvents(Stream<String> lines, List<Event> events) {
         List<Event> triggered = new ArrayList<>();
-        List<Double> values = lines.map(line -> Double.valueOf(line.split(UNIT)[0]))
-                                   .collect(Collectors.toList());
+        List<Double> values = lines.map(line -> {
+            try {
+                return Double.valueOf(line.split(UNIT)[0]);
+            } catch (Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }).collect(Collectors.toList());
 
         System.out.println("Parsed input of: " + values.toString());
 
         Double lastTemp = null;
+        values.removeIf(Objects::isNull);
         for (Double thisTemp: values) {
+            // Hack to move past the first value in the list so we can start comparisons
             if (lastTemp == null) {
                 lastTemp = thisTemp;
                 continue;
             }
 
-            Event match = matchEvent(events, thisTemp, lastTemp);
-            if (match != null && (THRESHOLD != null &&
-                                  THRESHOLD.compareTo(Math.abs(Double.valueOf(df.format(thisTemp - lastTemp)))) < 1)) {
-                //TODO: Add event specific threshold fluctuation tracking/comparison
-//                if (eventExists(triggered, match) && (THRESHOLD))
-
-                triggered.add(match);
+            // Update fluctuating boolean for each triggered event based on threshold and current temp
+            for (Event e : triggered) {
+                e.calculateFluctuating(df, THRESHOLD, lastTemp);
             }
 
+            // Attempt to match an event based on the current and previous temp values
+            Event match = matchEvent(events, thisTemp, lastTemp);
+            if (match != null) {
+                // Search for existing Event and bump the occurrence (if not fluctuating in/under the THRESHOLD)
+                Event existing = bumpExistingNonFluctuating(triggered, match);
+
+                // If we didn't find a match, add the new Event to the triggered events list and bump the occurrence
+                if (existing == null) {
+                    match.bumpOccurrences();
+                    triggered.add(match);
+                }
+            }
+
+            // update history
             lastTemp = thisTemp;
         }
 
@@ -86,15 +108,28 @@ public class ThermometerService {
     }
 
     /**
-     * Uses overridden .equals() method in Event.java to decide if we've already triggered that event
+     * Helper function..
+     * Uses overridden .equals() method in Event.java to decide if we've already triggered that event.
+     * Instead of keeping a list of all events that have happened, we're going to only include 1 matching events but instead
+     * keep track of the occurrences of that event and bump when we find a match that hasn't been fluctuating.
      *
-     * @param triggered
-     * @param event
-     * @return
+     * @param triggered current list of triggered events
+     * @param event current event that's been triggered
+     * @return an existing Event object in the list of triggered events
      */
-    private boolean eventExists(List<Event> triggered, Event event) {
-        return triggered.stream()
-                        .anyMatch(e -> e.equals(event));
+    private Event bumpExistingNonFluctuating(List<Event> triggered, Event event) {
+        Event existing = triggered.stream()
+                                  .filter(e -> e.equals(event))
+                                  .findFirst()
+                                  .orElse(null);
+
+        // If we found an existing Event and we've moved outside the fluctuation threshold, bump occurrences and reset boolean
+        if (existing != null && !existing.isFluctuating()) {
+            existing.setFluctuating(true);
+            existing.bumpOccurrences();
+        }
+
+        return existing;
     }
 
     /**

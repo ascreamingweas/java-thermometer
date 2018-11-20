@@ -1,5 +1,7 @@
 package models;
 
+import java.text.DecimalFormat;
+
 public class Event {
 
     public enum Trend {
@@ -23,19 +25,14 @@ public class Event {
 
     private Trend trend;
 
-    private boolean fluctuating = false;
+    private int occurrences = 0;
+
+    private boolean fluctuating = true;
 
     public Event(String name, Double temperature, Trend trend) {
         this.name = name;
         this.temperature = temperature;
         this.trend = trend;
-    }
-
-    public Event(String name, Double temperature, Trend trend, boolean fluctuating) {
-        this.name = name;
-        this.temperature = temperature;
-        this.trend = trend;
-        this.fluctuating = fluctuating;
     }
 
     public String getName() {
@@ -62,12 +59,40 @@ public class Event {
         this.trend = trend;
     }
 
+    public int getOccurrences() {
+        return occurrences;
+    }
+
+    public void setOccurrences(int occurrences) {
+        this.occurrences = occurrences;
+    }
+
+    /**
+     * Helper to bump the occurrence count
+     */
+    public void bumpOccurrences() {
+        this.occurrences++;
+    }
+
     public boolean isFluctuating() {
         return fluctuating;
     }
 
     public void setFluctuating(boolean fluctuating) {
         this.fluctuating = fluctuating;
+    }
+
+    /**
+     * Helper function to update the Event record fluctuating boolean with a comparison
+     * of the defined threshold and the absolute value of the difference between current temp and the Event recorded temp
+     * @param df
+     * @param threshold
+     * @param thisTemp
+     */
+    public void calculateFluctuating(DecimalFormat df, Double threshold, Double thisTemp) {
+        if (threshold != null && threshold.compareTo(Math.abs(Double.valueOf(df.format(thisTemp - this.temperature)))) < 1) {
+            this.fluctuating = false;
+        }
     }
 
     @Override

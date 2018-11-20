@@ -14,7 +14,7 @@
   <p>
     @if(events.size() > 0) {
       @for(event <- events) {
-        <ul>New (<b>@event.getName</b>) Event Occurred! <b>@event.getTemperature @units</b>
+        <ul>New (<b>@event.getName</b>) Event Occurred: {<b>@event.getOccurrences times</b>}. <b>@event.getTemperature @units</b>
           reached when trending <b>@event.getTrend.getDisplayName()</b></ul>
       }
     } else {

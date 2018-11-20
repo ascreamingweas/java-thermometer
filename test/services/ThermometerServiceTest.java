@@ -22,7 +22,6 @@ import models.Event.Trend;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ThermometerServiceTest extends WithApplication {
@@ -69,11 +68,73 @@ public class ThermometerServiceTest extends WithApplication {
      */
     @Test
     public void testEmptyFile() {
-        Stream<String> testStrings = new ArrayList<String>().stream();
-        List<Event> triggeredEvents = thermometerService.parseEvents(testStrings, events);
+        List<Event> triggeredEvents = thermometerService.parseEvents(new ArrayList<String>().stream(), events);
         assertTrue(triggeredEvents.isEmpty());
 
         Logger.info("Passed empty file test!");
+    }
+
+    /**
+     * Tests malformed data #1
+     */
+    @Test
+    public void testMalformedData1() {
+        List<String> testStrings = new ArrayList<>();
+        testStrings.add("!@#$%^&**(( cf");
+        assertTrue(thermometerService.parseEvents(testStrings.stream(), events).isEmpty());
+
+        Logger.info("Passed malformed data test 1!");
+    }
+
+    /**
+     * Tests malformed data #2
+     */
+    @Test
+    public void testMalformedData2() {
+        List<String> testStrings = new ArrayList<>();
+        testStrings.add("C");
+        assertTrue(thermometerService.parseEvents(testStrings.stream(), events).isEmpty());
+
+        Logger.info("Passed malformed data test 2!");
+    }
+
+    /**
+     * Tests malformed data #3
+     * Attempt to continue through if we can regardless of some bad values
+     */
+    @Test
+    public void testMalformedData3() {
+        List<String> testStrings = new ArrayList<>();
+        testStrings.add("C");
+        testStrings.add("0.kasdfj");
+        testStrings.add("0.5 C");
+        testStrings.add("#$%455");
+        testStrings.add("0.0 C");
+
+        List<Event> triggeredEvents = thermometerService.parseEvents(testStrings.stream(), events);
+
+        assertTrue(!triggeredEvents.isEmpty());
+        assertEquals(freezing.getName(), triggeredEvents.get(0).getName());
+
+        Logger.info("Passed malformed data test 3!");
+    }
+
+    /**
+     * Tests malformed data #4
+     * Testing valid data with the wrong units, shouldn't match anything and return empty list
+     */
+    @Test
+    public void testMalformedData4() {
+        List<String> testStrings = new ArrayList<>();
+        testStrings.add("1.0 F");
+        testStrings.add("0.5 F");
+        testStrings.add("0.0 F");
+
+        List<Event> triggeredEvents = thermometerService.parseEvents(testStrings.stream(), events);
+
+        assertTrue(triggeredEvents.isEmpty());
+
+        Logger.info("Passed malformed data test 4!");
     }
 
     /**
@@ -82,6 +143,7 @@ public class ThermometerServiceTest extends WithApplication {
     @Test
     public void testFreezingDownNoThreshold() {
         List<String> testStrings = new ArrayList<>();
+        testStrings.add("1.0 C");
         testStrings.add("0.5 C");
         testStrings.add("0.0 C");
 
@@ -99,6 +161,7 @@ public class ThermometerServiceTest extends WithApplication {
     @Test
     public void testBoilingUpNoThreshold() {
         List<String> testStrings = new ArrayList<>();
+        testStrings.add("99.0 C");
         testStrings.add("99.5 C");
         testStrings.add("100.0 C");
 
