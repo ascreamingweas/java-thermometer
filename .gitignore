@@ -4,7 +4,6 @@
 *.bat
 *.log
 .cache*
-project/
 target/
 logs/
 .g8/
