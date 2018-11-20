@@ -1,26 +1,22 @@
 package services;
 
-import com.typesafe.config.Config;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import models.Event;
+import models.Event.Trend;
 
 import play.Application;
 import play.Logger;
 import play.inject.guice.GuiceApplicationBuilder;
 import play.test.WithApplication;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.when;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.runners.MockitoJUnitRunner;
 
-import models.Event;
-import models.Event.Trend;
-
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,7 +31,6 @@ public class ThermometerServiceTest extends WithApplication {
     private Event boiling = new Event("Boiling", 100.0, Trend.UP);
     private Event freezing = new Event("Freezing", 0.0, Trend.DOWN);
 
-    @Mock Config config;
     @InjectMocks ThermometerService thermometerService = new ThermometerService(UNIT, THRESHOLD, DECIMALFORMAT);
 
     @Override
