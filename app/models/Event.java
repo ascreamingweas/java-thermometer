@@ -19,14 +19,23 @@ public class Event {
 
     private String name;
 
-    private double temperature;
+    private Double temperature;
 
     private Trend trend;
 
-    public Event(String name, double temperature, Trend trend) {
+    private boolean fluctuating = false;
+
+    public Event(String name, Double temperature, Trend trend) {
         this.name = name;
         this.temperature = temperature;
         this.trend = trend;
+    }
+
+    public Event(String name, Double temperature, Trend trend, boolean fluctuating) {
+        this.name = name;
+        this.temperature = temperature;
+        this.trend = trend;
+        this.fluctuating = fluctuating;
     }
 
     public String getName() {
@@ -37,11 +46,11 @@ public class Event {
         this.name = name;
     }
 
-    public double getTemperature() {
+    public Double getTemperature() {
         return temperature;
     }
 
-    public void setTemperature(double temperature) {
+    public void setTemperature(Double temperature) {
         this.temperature = temperature;
     }
 
@@ -51,5 +60,32 @@ public class Event {
 
     public void setTrend(Trend trend) {
         this.trend = trend;
+    }
+
+    public boolean isFluctuating() {
+        return fluctuating;
+    }
+
+    public void setFluctuating(boolean fluctuating) {
+        this.fluctuating = fluctuating;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s|%f|%s", name, temperature, trend.displayName);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == this) {
+            return true;
+        }
+
+        if (!(o instanceof Event)) {
+            return false;
+        }
+
+        Event e = (Event)o;
+        return e.name.equals(this.name) && e.temperature.equals(this.temperature) && e.trend.equals(this.trend);
     }
 }

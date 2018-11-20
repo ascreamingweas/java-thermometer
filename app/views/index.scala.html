@@ -1,6 +1,5 @@
 @(units:String,
   threshold:Double,
-  output:List[String],
   events:List[Event]
 )
 
@@ -11,17 +10,15 @@
     <b>Fluctuation Threshold:</b> @threshold
   </h2>
 
-  <h3>Input:</h3>
+  <h3>Events found on input:</h3>
   <p>
-    @for(line <- output) {
-      <ul>@line</ul>
-    }
-  </p>
-
-  <h3>Events:</h3>
-  <p>
-    @for(event <- events) {
-      <ul>New (<b>@event.getName</b>) Event Occurred! <b>@event.getTemperature @units</b> reached when trending <b>@event.getTrend.getDisplayName()</b></ul>
+    @if(events.size() > 0) {
+      @for(event <- events) {
+        <ul>New (<b>@event.getName</b>) Event Occurred! <b>@event.getTemperature @units</b>
+          reached when trending <b>@event.getTrend.getDisplayName()</b></ul>
+      }
+    } else {
+      <ul>No events found.</ul>
     }
   </p>
 }
