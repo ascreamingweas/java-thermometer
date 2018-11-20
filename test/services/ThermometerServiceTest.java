@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 import models.Event;
 import models.Event.Trend;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,7 +28,7 @@ import java.util.List;
 public class ThermometerServiceTest extends WithApplication {
 
     private static String UNIT = "C";
-    private static Double THRESHOLD = 0.5;
+    private static Double THRESHOLD = 100.0; // Very high threshold for default testing
     private static String DECIMALFORMAT = "###.##";
 
     private List<Event> events = new ArrayList<>();
@@ -169,13 +170,127 @@ public class ThermometerServiceTest extends WithApplication {
 
         assertTrue(!triggeredEvents.isEmpty());
         assertEquals(boiling.getName(), triggeredEvents.get(0).getName());
+        assertEquals(1, triggeredEvents.get(0).getOccurrences());
 
         Logger.info("Passed boiling UP no threshold test!");
     }
 
-    private void overrideConfig(String unit, Double threshold) {
-        when(config.getString("thermometer.unit")).thenReturn(unit);
-        when(config.getDouble("thermometer.threshold")).thenReturn(threshold);
+    /**
+     * Tests one Boiling event, trending up, with threshold, 1 event, 1 occurrence
+     */
+    @Test
+    public void testBoilingUpWithThreshold1() {
+        List<String> testStrings = new ArrayList<>();
+        testStrings.add("88.0 C");
+        testStrings.add("90.0 C");
+        testStrings.add("99.5 C");
+        testStrings.add("100.0 C");
+        testStrings.add("100.5 C");
+        testStrings.add("100.5 C");
+        testStrings.add("100.0 C");
+        testStrings.add("99.5 C");
+        testStrings.add("100.0 C");
+
+        List<Event> triggeredEvents = thermometerService.parseEvents(testStrings.stream(), events);
+
+        assertEquals(1, triggeredEvents.size());
+        Event triggered = triggeredEvents.get(0);
+
+        assertEquals(boiling.getName(), triggered.getName());
+        assertEquals(1, triggered.getOccurrences());
+
+        Logger.info("Passed boiling UP with threshold (1, 1) test!");
     }
 
+    /**
+     * Tests one Boiling event, trending up, with threshold, 1 events, 3 occurrences
+     */
+    @Test
+    public void testBoilingUpWithThreshold2() {
+        List<String> testStrings = new ArrayList<>();
+        testStrings.add("88.0 C");
+        testStrings.add("100.0 C");
+        testStrings.add("99.5 C");
+        testStrings.add("100.0 C");
+        testStrings.add("90.0 C");
+        testStrings.add("100.0 C");
+        testStrings.add("105.0 C");
+        testStrings.add("99.5 C");
+        testStrings.add("100.0 C");
+
+        ThermometerService overrideService = new ThermometerService(UNIT, 0.5, DECIMALFORMAT);
+        List<Event> triggeredEvents = overrideService.parseEvents(testStrings.stream(), events);
+
+        assertEquals(1, triggeredEvents.size());
+        Event triggered = triggeredEvents.get(0);
+
+        assertEquals(boiling.getName(), triggered.getName());
+        assertEquals(3, triggered.getOccurrences());
+
+        Logger.info("Passed boiling UP with threshold (1, 3) test!");
+    }
+
+    /**
+     * Tests several events using a threshold with multiple occurrences
+     */
+    @Test
+    public void testEventsWithThreshold1() {
+        List<String> testStrings = new ArrayList<>();
+        testStrings.add("45.0 C");
+        testStrings.add("100.0 C");
+        testStrings.add("99.5 C");
+        testStrings.add("29.5 C");
+        testStrings.add("0.0 C");
+        testStrings.add("-20.5 C");
+        testStrings.add("-0.5 C");
+        testStrings.add("0.0 C");
+        testStrings.add("45.0 C");
+        testStrings.add("99.5 C");
+        testStrings.add("100.0 C");
+
+        ThermometerService overrideService = new ThermometerService(UNIT, 0.5, DECIMALFORMAT);
+        List<Event> triggeredEvents = overrideService.parseEvents(testStrings.stream(), events);
+
+        assertEquals(2, triggeredEvents.size());
+        Event boilingEvent = triggeredEvents.get(0);
+        Event freezingEvent = triggeredEvents.get(1);
+
+        assertEquals(boiling.getName(), boilingEvent.getName());
+        assertEquals(2, boilingEvent.getOccurrences());
+
+        assertEquals(freezing.getName(), freezingEvent.getName());
+        assertEquals(1, freezingEvent.getOccurrences());
+
+        Logger.info("Passed multiple events with threshold test 1!");
+    }
+
+    /**
+     * Tests several events using a threshold with multiple occurrences
+     * A few more complex movements
+     */
+    @Test
+    public void testEventsWithThreshold2() {
+        List<String> testStrings = new ArrayList<>();
+        testStrings.add("45.0 C");
+        testStrings.add("105.0 C");
+        testStrings.add("100.0 C");
+        testStrings.add("29.5 C");
+        testStrings.add("-20.5 C");
+        testStrings.add("-0.5 C");
+        testStrings.add("0.0 C");
+        testStrings.add("45.0 C");
+        testStrings.add("99.5 C");
+        testStrings.add("100.0 C");
+
+        ThermometerService overrideService = new ThermometerService(UNIT, 0.5, DECIMALFORMAT);
+        List<Event> triggeredEvents = overrideService.parseEvents(testStrings.stream(), events);
+
+        assertEquals(1, triggeredEvents.size());
+        Event boilingEvent = triggeredEvents.get(0);
+
+        assertEquals(boiling.getName(), boilingEvent.getName());
+        assertEquals(1, boilingEvent.getOccurrences());
+
+        Logger.info("Passed multiple events with threshold test 2!");
+    }
 }

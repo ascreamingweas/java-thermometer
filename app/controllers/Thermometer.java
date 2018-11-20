@@ -60,7 +60,7 @@ public class Thermometer extends Controller {
     }
 
     /**
-     * Base case 1, testing one Freezing event when trending down
+     * Base case 1, testing one Freezing event when trending down with 1 occurrence
      *
      * The configuration in the {@code routes} file means that
      * this method will be called when the application receives a
@@ -70,6 +70,28 @@ public class Thermometer extends Controller {
         try (Stream<String> lines = Files.lines(Paths.get("input.txt"))) {
             List<Event> events = new ArrayList<>();
             events.add(new Event("Freezing", 0.0, Trend.DOWN));
+
+            return ok(generateDisplay(lines, events));
+        } catch (IOException e) {
+            Logger.error("Error!", e);
+        } catch (Exception e) {
+            Logger.error("Uncaught error!", e);
+        }
+
+        return badRequest("Your sh*t is broke. Check logs.");
+    }
+
+    /**
+     * Base case 2, testing one Boiling event when trending down with 3 occurrences
+     *
+     * The configuration in the {@code routes} file means that
+     * this method will be called when the application receives a
+     * {@code GET} request with a path of {@code /case2}.
+     */
+    public Result case2() {
+        try (Stream<String> lines = Files.lines(Paths.get("input2.txt"))) {
+            List<Event> events = new ArrayList<>();
+            events.add(new Event("Boiling", 100.0, Trend.UP));
 
             return ok(generateDisplay(lines, events));
         } catch (IOException e) {

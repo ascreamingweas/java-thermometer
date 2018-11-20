@@ -90,7 +90,7 @@ public class Event {
      * @param thisTemp
      */
     public void calculateFluctuating(DecimalFormat df, Double threshold, Double thisTemp) {
-        if (threshold != null && threshold.compareTo(Math.abs(Double.valueOf(df.format(thisTemp - this.temperature)))) < 1) {
+        if (threshold != null && threshold.compareTo(Math.abs(Double.valueOf(df.format(thisTemp - this.temperature)))) < 0) {
             this.fluctuating = false;
         }
     }
