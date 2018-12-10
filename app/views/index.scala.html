@@ -4,25 +4,36 @@
 )
 
 @main("Thermometer App") {
-  <h1>Welcome to Justin's Thermometer App</h1>
-  <h2>
-    <b>Temperature Unit:</b> @units<br/>
-    <b>Fluctuation Threshold:</b> @threshold
-  </h2>
+  <div id="app">
+    <h1>{{title}}</h1>
+    <h2>
+      <b>Temperature Unit:</b> @units<br/>
+      <b>Fluctuation Threshold:</b> @threshold
+    </h2>
 
-  <h3>Events found on input:</h3>
-  <p>
-    @if(events.size() > 0) {
-      @for(event <- events) {
-        <ul>New (<b>@event.getName</b>) Event Occurred: {<b>@event.getOccurrences times</b>}. <b>@event.getTemperature @units</b>
-          reached when trending <b>@event.getTrend.getDisplayName()</b></ul>
+    <h3>Events found on input:</h3>
+    <p>
+      @if(events.size() > 0) {
+        @for(event <- events) {
+          <ul>New (<b>@event.getName</b>) Event Occurred: {<b>@event.getOccurrences times</b>}. <b>@event.getTemperature @units</b>
+            reached when trending <b>@event.getTrend.getDisplayName()</b></ul>
+        }
+      } else {
+        <ul>No events found.</ul>
       }
-    } else {
-      <ul>No events found.</ul>
-    }
-  </p>
+    </p>
 
-  <a href="/"><button>Home</button></a>
-  <a href="/case1"><button>Case 1</button></a>
-  <a href="/case2"><button>Case 2</button></a>
+    <a href="/"><button>Home</button></a>
+    <a href="/case1"><button>Case 1</button></a>
+    <a href="/case2"><button>Case 2</button></a>
+  </div>
+
+  <script>
+    var app = new Vue({
+      el: '#app',
+      data: {
+        title: 'Welcome to Justin\'s Thermometer App'
+      }
+    })
+  </script>
 }
